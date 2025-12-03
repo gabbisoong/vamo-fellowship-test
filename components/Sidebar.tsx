@@ -9,7 +9,7 @@ import { useWorkspacePanel } from '@/contexts/WorkspacePanelContext';
 
 const navItems = [
   { name: 'Home', href: '/', icon: 'chart' },
-  { name: 'My Customers', href: '/customers', icon: 'person' },
+  { name: 'My Targets', href: '/customers', icon: 'person' },
   { name: 'Daily Updates', href: '/updates', icon: 'pencil' },
   { name: 'Social Proof', href: '/evidence', icon: 'document' },
   { name: 'Contributors', href: '/team', icon: 'people' },

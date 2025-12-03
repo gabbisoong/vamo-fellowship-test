@@ -246,8 +246,15 @@ export default function MyCustomers() {
 
   useEffect(() => {
     fetchStats();
-    initializeCustomers();
+    loadCustomers();
   }, []);
+
+  // Auto-save customers to localStorage whenever they change
+  useEffect(() => {
+    if (customers.length > 0) {
+      localStorage.setItem('customers', JSON.stringify(customers));
+    }
+  }, [customers]);
 
   const fetchStats = async () => {
     try {
@@ -261,15 +268,26 @@ export default function MyCustomers() {
     }
   };
 
-  const initializeCustomers = () => {
-    // Initialize 12 empty customer rows
+  const loadCustomers = () => {
+    // Try to load from localStorage first
+    const savedCustomers = localStorage.getItem('customers');
+    if (savedCustomers) {
+      try {
+        setCustomers(JSON.parse(savedCustomers));
+        return;
+      } catch (error) {
+        console.error('Error loading saved customers:', error);
+      }
+    }
+
+    // Initialize 12 empty customer rows if no saved data
     const emptyCustomers: Customer[] = Array.from({ length: 12 }, (_, index) => ({
       id: index + 1,
       name: '',
       relationship: '',
       explanation: '',
       stage: '',
-      createdAt: 0, // Not yet created
+      createdAt: 0,
     }));
     setCustomers(emptyCustomers);
   };
