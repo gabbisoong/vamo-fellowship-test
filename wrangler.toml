@@ -1,0 +1,11 @@
+name = "email-attachments-dashboard"
+main = "src/index.ts"
+compatibility_date = "2024-10-11"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[[r2_buckets]]
+binding = "ATTACHMENTS"
+bucket_name = "email-attachments"

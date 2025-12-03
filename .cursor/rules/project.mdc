@@ -1,0 +1,52 @@
+---
+description: Core project context and structure
+globs:
+alwaysApply: true
+---
+
+# Email Attachments Dashboard
+
+Cloudflare Worker that receives emails with attachments and displays them in a dashboard.
+
+## Tech Stack
+- Cloudflare Workers + TypeScript
+- R2 (object storage)
+- Vanilla HTML/CSS/JS (no framework)
+
+## File Structure
+- `src/index.ts` - Business logic (email handler + API) - **DO NOT MODIFY** unless changing backend
+- `src/dashboard.ts` - Frontend UI - **EDIT THIS** for UI changes
+
+## API Endpoints
+- `GET /api/attachments` - List all attachments (JSON array)
+- `GET /api/file/:key` - View/download file
+- `GET /api/file/:key?download` - Force download
+- `DELETE /api/delete/:key` - Delete attachment
+
+## Attachment Object
+```typescript
+{
+  key: string;        // Unique ID for URLs
+  filename: string;   // Original filename
+  size: number;       // Bytes
+  mimeType: string;   // e.g., "image/png"
+  from: string;       // Sender email
+  subject: string;    // Email subject
+  uploaded: string;   // ISO date
+}
+```
+
+## Commands
+```bash
+pnpm dev      # Local dev server
+pnpm lint     # Check errors
+pnpm fix      # Auto-fix errors
+pnpm check    # Type checking
+pnpm deploy   # Deploy to production
+```
+
+## Don'ts
+- DON'T modify `src/index.ts` unless changing API
+- DON'T commit `node_modules/` or `.wrangler/`
+- DON'T use `var` - use `const` or `let`
+- DON'T merge if CI fails

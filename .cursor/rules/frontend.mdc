@@ -1,0 +1,49 @@
+---
+description: Frontend development in dashboard.ts
+globs:
+alwaysApply: true
+---
+
+# Frontend Development
+
+You're editing `src/dashboard.ts` - the frontend UI.
+
+## Structure
+The `getDashboardHTML()` function contains:
+1. `<style>` - CSS styles
+2. `<body>` - HTML markup
+3. `<script>` - JavaScript logic
+
+## API Client
+```javascript
+const API = {
+  listAttachments: () => fetch('/api/attachments').then(r => r.json()),
+  getFileUrl: (key) => `/api/file/${encodeURIComponent(key)}`,
+  deleteFile: (key) => fetch(`/api/delete/${encodeURIComponent(key)}`, { method: 'DELETE' })
+};
+```
+
+## Code Style
+
+### CSS
+- Use CSS custom properties for theming
+- Mobile-first responsive design
+- BEM-like naming: `.attachment`, `.attachment__preview`, `.btn-view`
+
+### JavaScript
+- Use async/await for API calls
+- Handle errors with try/catch
+- Use template literals for HTML
+
+### HTML
+- Semantic elements
+- Accessible: labels, alt text, ARIA
+- No inline styles
+
+## Testing
+```bash
+pnpm dev
+```
+Open http://localhost:8787
+
+Send test emails to: `attachments@vamotalent.com`
