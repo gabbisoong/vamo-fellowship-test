@@ -229,6 +229,7 @@ function EditableCell({
 
 export default function CustomerProofsPage() {
   useSession();
+  // Updated: 2025-12-04 - Added edit modal, green rows, and submit button
   const [stats, setStats] = useState<FellowshipStats | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [activeRowId, setActiveRowId] = useState<number | null>(null);
