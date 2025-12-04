@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
@@ -431,6 +434,7 @@ export default function CustomerProofsPage() {
               </thead>
               <tbody>
                 {(() => {
+                  if (typeof window === 'undefined') return null;
                   const payingCustomers = JSON.parse(localStorage.getItem('payingCustomers') || '[]');
                   const customerSlots = Array.from({ length: 10 }, (_, index) => payingCustomers[index] || null);
 
@@ -476,6 +480,7 @@ export default function CustomerProofsPage() {
 
             {/* Submit Button */}
             {(() => {
+              if (typeof window === 'undefined') return null;
               const payingCustomers = JSON.parse(localStorage.getItem('payingCustomers') || '[]');
               const hasTenCustomers = payingCustomers.length >= 10;
 
