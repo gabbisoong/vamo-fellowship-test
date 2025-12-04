@@ -232,10 +232,27 @@ export default function CustomerProofsPage() {
   const [stats, setStats] = useState<FellowshipStats | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [activeRowId, setActiveRowId] = useState<number | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<any>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({
+    customerName: '',
+    amount: '',
+    paymentDate: '',
+    file: null as File | null,
+  });
 
   useEffect(() => {
     fetchStats();
     initializeCustomers();
+
+    // Reload data when page gains focus (e.g., when navigating from another tab)
+    const handleFocus = () => {
+      initializeCustomers();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   const fetchStats = async () => {
@@ -251,16 +268,33 @@ export default function CustomerProofsPage() {
   };
 
   const initializeCustomers = () => {
-    // Initialize 10 empty customer rows
-    const emptyCustomers: Customer[] = Array.from({ length: 10 }, (_, index) => ({
-      id: index + 1,
-      name: '',
-      relationship: '',
-      explanation: '',
-      stage: '',
-      createdAt: 0,
-    }));
-    setCustomers(emptyCustomers);
+    // Load paying customers from localStorage
+    const payingCustomers = JSON.parse(localStorage.getItem('payingCustomers') || '[]');
+
+    // Create 10 slots
+    const customerSlots: Customer[] = Array.from({ length: 10 }, (_, index) => {
+      const payment = payingCustomers[index];
+      if (payment) {
+        return {
+          id: index + 1,
+          name: payment.customerName,
+          relationship: '',
+          explanation: `$${payment.amount.toLocaleString()} paid on ${new Date(payment.paymentDate).toLocaleDateString()}`,
+          stage: 'Secured ✓',
+          createdAt: new Date(payment.createdAt).getTime(),
+        };
+      }
+      return {
+        id: index + 1,
+        name: '',
+        relationship: '',
+        explanation: '',
+        stage: '',
+        createdAt: 0,
+      };
+    });
+
+    setCustomers(customerSlots);
   };
 
   const updateCustomer = (id: number, field: keyof Customer, value: string) => {
@@ -273,6 +307,48 @@ export default function CustomerProofsPage() {
         return customer;
       })
     );
+  };
+
+  const handleEditClick = (customer: any, index: number) => {
+    if (!customer) return; // Don't open modal for empty rows
+
+    setEditingCustomer(customer);
+    setEditingIndex(index);
+    setEditForm({
+      customerName: customer.customerName,
+      amount: customer.amount.toString(),
+      paymentDate: customer.paymentDate,
+      file: null,
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (editingIndex === null) return;
+
+    const payingCustomers = JSON.parse(localStorage.getItem('payingCustomers') || '[]');
+
+    // Update the customer at the editing index
+    payingCustomers[editingIndex] = {
+      ...payingCustomers[editingIndex],
+      customerName: editForm.customerName,
+      amount: parseFloat(editForm.amount),
+      paymentDate: editForm.paymentDate,
+      fileName: editForm.file ? editForm.file.name : payingCustomers[editingIndex].fileName,
+    };
+
+    localStorage.setItem('payingCustomers', JSON.stringify(payingCustomers));
+
+    // Close modal and reset
+    setShowEditModal(false);
+    setEditForm({ customerName: '', amount: '', paymentDate: '', file: null });
+    setEditingCustomer(null);
+    setEditingIndex(null);
+
+    // Reload the table
+    initializeCustomers();
   };
 
   // Sort customers by likelihood (descending) and then by createdAt (ascending)
@@ -342,88 +418,169 @@ export default function CustomerProofsPage() {
           </div>
 
           {/* Customers Table */}
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden" style={{ maxWidth: '774px' }}>
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
                   <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 w-16">#</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 w-48">Name</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 w-56">Relationship</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Why are they on this list?</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 w-48">Stage</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 w-48">% Likelihood of Paying</th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Customer</th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Payment Date</th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Amount Paid</th>
                 </tr>
               </thead>
               <tbody>
-                {sortedCustomers.map((customer, index) => {
-                  const isActive = activeRowId === customer.id;
-                  return (
-                    <tr
-                      key={customer.id}
-                      className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
-                      style={isActive ? {
-                        outline: '1.5px solid #4B91F2',
-                        outlineOffset: '-1.5px'
-                      } : undefined}
-                    >
+                {(() => {
+                  const payingCustomers = JSON.parse(localStorage.getItem('payingCustomers') || '[]');
+                  const customerSlots = Array.from({ length: 10 }, (_, index) => payingCustomers[index] || null);
+
+                  return customerSlots.map((customer, index) => {
+                    const isLastRow = index === 9;
+                    const hasTenCustomers = customerSlots.filter(c => c !== null).length >= 10;
+
+                    return (
+                      <tr
+                        key={index}
+                        onClick={() => customer && handleEditClick(customer, index)}
+                        className={`border-b border-gray-100 last:border-b-0 ${customer ? 'cursor-pointer' : ''}`}
+                        style={
+                          customer
+                            ? isLastRow && hasTenCustomers
+                              ? { background: 'linear-gradient(to right, #d1fae5, #a7f3d0)' }
+                              : { backgroundColor: '#D1ECD6' }
+                            : undefined
+                        }
+                      >
                       <td className="px-6 py-4 text-sm text-gray-500">{index + 1}</td>
                       <td className="px-6 py-4">
-                        <EditableCell
-                          value={customer.name}
-                          onChange={(value) => updateCustomer(customer.id, 'name', value)}
-                          placeholder="Type Name"
-                          onFocus={() => setActiveRowId(customer.id)}
-                        />
+                        <span className={`text-sm ${customer ? 'font-medium text-gray-900' : 'text-gray-400'}`}>
+                          {customer ? customer.customerName : 'Paying Customer'}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
-                        <DropdownField
-                          value={customer.relationship}
-                          onChange={(value) => updateCustomer(customer.id, 'relationship', value as Customer['relationship'])}
-                          options={RELATIONSHIP_OPTIONS}
-                          placeholder="Select relationship level"
-                          onFocus={() => setActiveRowId(customer.id)}
-                        />
+                        <span className={`text-sm ${customer ? 'text-gray-900' : 'text-gray-400'}`}>
+                          {customer ? new Date(customer.paymentDate).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' }) : 'Payment Date'}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
-                        <EditableCell
-                          value={customer.explanation}
-                          onChange={(value) => updateCustomer(customer.id, 'explanation', value)}
-                          placeholder="Type explanation here..."
-                          onFocus={() => setActiveRowId(customer.id)}
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        <DropdownField
-                          value={customer.stage}
-                          onChange={(value) => updateCustomer(customer.id, 'stage', value)}
-                          options={STAGE_OPTIONS}
-                          placeholder="Select stage"
-                          onFocus={() => setActiveRowId(customer.id)}
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        {(() => {
-                          const likelihood = calculateLikelihood(customer.relationship, customer.stage);
-                          const style = getLikelihoodStyle(likelihood);
-                          return (
-                            <span
-                              className={`text-sm font-semibold ${style.isCustomColor ? '' : style.color}`}
-                              style={style.isCustomColor ? { color: style.color } : undefined}
-                            >
-                              {likelihood}% {style.icon}
-                            </span>
-                          );
-                        })()}
+                        <span className={`text-sm ${customer ? 'text-gray-900' : 'text-gray-400'}`}>
+                          {customer ? `$${customer.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Amount Paid'}
+                        </span>
                       </td>
                     </tr>
-                  );
-                })}
-
+                    );
+                  });
+                })()}
               </tbody>
             </table>
+
+            {/* Submit Button */}
+            {(() => {
+              const payingCustomers = JSON.parse(localStorage.getItem('payingCustomers') || '[]');
+              const hasTenCustomers = payingCustomers.length >= 10;
+
+              return (
+                <div className="px-6 py-8 border-t border-gray-200">
+                  <button
+                    disabled={!hasTenCustomers}
+                    className={`w-full py-4 rounded-lg font-semibold text-lg transition-all ${
+                      hasTenCustomers
+                        ? 'bg-black text-white hover:bg-gray-800 cursor-pointer'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
+                    }`}
+                  >
+                    🎉 Submit to Unlock $100k Prize
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </main>
+
+      {/* Edit Payment Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Payment Information</h2>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Customer Name
+                </label>
+                <input
+                  type="text"
+                  value={editForm.customerName}
+                  onChange={(e) => setEditForm({ ...editForm, customerName: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Amount Paid ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editForm.amount}
+                  onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Date
+                </label>
+                <input
+                  type="date"
+                  value={editForm.paymentDate}
+                  onChange={(e) => setEditForm({ ...editForm, paymentDate: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Proof Document
+                </label>
+                <input
+                  type="file"
+                  onChange={(e) => setEditForm({ ...editForm, file: e.target.files?.[0] || null })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                />
+                <p className="mt-1 text-xs text-gray-500">Optional - only upload if replacing the existing document</p>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditForm({ customerName: '', amount: '', paymentDate: '', file: null });
+                    setEditingCustomer(null);
+                    setEditingIndex(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

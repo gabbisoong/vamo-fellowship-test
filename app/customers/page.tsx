@@ -243,6 +243,13 @@ export default function MyCustomers() {
     paymentDate: '',
     file: null as File | null,
   });
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [submitForm, setSubmitForm] = useState({
+    name: '',
+    relationship: '' as Customer['relationship'],
+    explanation: '',
+    stage: '',
+  });
 
   useEffect(() => {
     fetchStats();
@@ -273,15 +280,29 @@ export default function MyCustomers() {
     const savedCustomers = localStorage.getItem('customers');
     if (savedCustomers) {
       try {
-        setCustomers(JSON.parse(savedCustomers));
+        const parsed = JSON.parse(savedCustomers);
+        // If saved data has less than 100 rows, pad it to 100
+        if (parsed.length < 100) {
+          const additionalRows = Array.from({ length: 100 - parsed.length }, (_, index) => ({
+            id: parsed.length + index + 1,
+            name: '',
+            relationship: '',
+            explanation: '',
+            stage: '',
+            createdAt: 0,
+          }));
+          setCustomers([...parsed, ...additionalRows]);
+        } else {
+          setCustomers(parsed);
+        }
         return;
       } catch (error) {
         console.error('Error loading saved customers:', error);
       }
     }
 
-    // Initialize 12 empty customer rows if no saved data
-    const emptyCustomers: Customer[] = Array.from({ length: 12 }, (_, index) => ({
+    // Initialize 100 empty customer rows if no saved data
+    const emptyCustomers: Customer[] = Array.from({ length: 100 }, (_, index) => ({
       id: index + 1,
       name: '',
       relationship: '',
@@ -315,28 +336,50 @@ export default function MyCustomers() {
 
     if (!selectedCustomer || !paymentForm.file) return;
 
-    const formData = new FormData();
-    formData.append('customerName', selectedCustomer.name);
-    formData.append('amount', paymentForm.amount);
-    formData.append('paymentDate', paymentForm.paymentDate);
-    formData.append('file', paymentForm.file);
+    // Save to localStorage for local testing
+    const payingCustomers = JSON.parse(localStorage.getItem('payingCustomers') || '[]');
+    const newPayment = {
+      id: Date.now().toString(),
+      customerName: selectedCustomer.name,
+      amount: parseFloat(paymentForm.amount),
+      paymentDate: paymentForm.paymentDate,
+      fileName: paymentForm.file.name,
+      createdAt: new Date().toISOString(),
+    };
 
-    try {
-      const response = await fetch('/api/customer-proofs', {
-        method: 'POST',
-        body: formData,
-      });
+    payingCustomers.push(newPayment);
+    localStorage.setItem('payingCustomers', JSON.stringify(payingCustomers));
 
-      if (response.ok) {
-        setShowPaymentModal(false);
-        setPaymentForm({ amount: '', paymentDate: '', file: null });
-        setSelectedCustomer(null);
-        alert('Payment proof added successfully!');
-      }
-    } catch (error) {
-      console.error('Error submitting payment proof:', error);
-      alert('Failed to submit payment proof');
+    // Close modal and reset form
+    setShowPaymentModal(false);
+    setPaymentForm({ amount: '', paymentDate: '', file: null });
+    setSelectedCustomer(null);
+    alert('Payment proof added successfully! Check the Paying Customers tab.');
+  };
+
+  const handleSubmitTarget = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Find the first empty row
+    const firstEmptyRowIndex = customers.findIndex(c => !c.name && !c.stage);
+
+    if (firstEmptyRowIndex !== -1) {
+      // Update the first empty row with the new target
+      const updatedCustomers = [...customers];
+      updatedCustomers[firstEmptyRowIndex] = {
+        id: updatedCustomers[firstEmptyRowIndex].id,
+        name: submitForm.name,
+        relationship: submitForm.relationship,
+        explanation: submitForm.explanation,
+        stage: submitForm.stage,
+        createdAt: Date.now(),
+      };
+      setCustomers(updatedCustomers);
     }
+
+    // Close modal and reset form
+    setShowSubmitModal(false);
+    setSubmitForm({ name: '', relationship: '', explanation: '', stage: '' });
   };
 
   // Sort customers by likelihood (descending) and then by createdAt (ascending)
@@ -387,7 +430,7 @@ export default function MyCustomers() {
                   The more targets you add, the higher your likelihood of getting 10 paying customers!
                 </p>
               </div>
-              <button className="btn-outline">
+              <button onClick={() => setShowSubmitModal(true)} className="btn-outline">
                 Submit Target
               </button>
             </div>
@@ -608,6 +651,144 @@ export default function MyCustomers() {
                   className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
                 >
                   Submit
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Submit Target Modal */}
+      {showSubmitModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Submit New Target</h2>
+              <button
+                onClick={() => {
+                  setShowSubmitModal(false);
+                  setSubmitForm({ name: '', relationship: '', explanation: '', stage: '' });
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitTarget} className="space-y-4">
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={submitForm.name}
+                  onChange={(e) => setSubmitForm({ ...submitForm, name: e.target.value })}
+                  placeholder="Enter name"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                />
+              </div>
+
+              {/* Relationship */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Relationship
+                </label>
+                <select
+                  required
+                  value={submitForm.relationship}
+                  onChange={(e) => setSubmitForm({ ...submitForm, relationship: e.target.value as Customer['relationship'] })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                >
+                  <option value="">Select relationship level</option>
+                  {RELATIONSHIP_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.value}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Why are they on this list */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Why are they on this list?
+                </label>
+                <textarea
+                  required
+                  value={submitForm.explanation}
+                  onChange={(e) => setSubmitForm({ ...submitForm, explanation: e.target.value })}
+                  placeholder="Type explanation here..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
+                />
+              </div>
+
+              {/* Stage */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Stage
+                </label>
+                <select
+                  required
+                  value={submitForm.stage}
+                  onChange={(e) => setSubmitForm({ ...submitForm, stage: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                >
+                  <option value="">Select stage</option>
+                  <optgroup label="Select stage of sale">
+                    {STAGE_OPTIONS.filter(opt => opt.group === 'main').map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.value}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Secured?">
+                    {STAGE_OPTIONS.filter(opt => opt.group === 'secured').map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.value}</option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* Likelihood (calculated) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  % Likelihood of Paying
+                </label>
+                <div className="w-full px-4 py-2 border border-gray-200 bg-gray-50 rounded-lg">
+                  {(() => {
+                    const likelihood = calculateLikelihood(submitForm.relationship, submitForm.stage);
+                    const style = getLikelihoodStyle(likelihood);
+                    return (
+                      <span
+                        className={`text-sm font-semibold ${style.isCustomColor ? '' : style.color}`}
+                        style={style.isCustomColor ? { color: style.color } : undefined}
+                      >
+                        {likelihood}% {style.icon}
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSubmitModal(false);
+                    setSubmitForm({ name: '', relationship: '', explanation: '', stage: '' });
+                  }}
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
+                >
+                  Submit Target
                 </button>
               </div>
             </form>
