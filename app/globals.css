@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Greed TRIAL Font */
+@font-face {
+  font-family: 'Greed TRIAL';
+  src: url('/fonts/greed-medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* ===========================================
+   TEXT STYLES - Edit these to change typography
+   All text styling is here for easy editing!
+   =========================================== */
+
+@layer components {
+
+  /* ---- DASHBOARD PAGE ---- */
+
+  /* "100 Days Left" - main countdown */
+  .text-display {
+    @apply font-semibold text-gray-900;
+    font-size: 54px;
+    line-height: 100%;
+    letter-spacing: -0.03em;
+  }
+
+  /* "Good afternoon, Name" - greeting */
+  .text-greeting {
+    @apply text-lg text-gray-600;
+  }
+  .text-greeting-name {
+    @apply text-lg text-gray-900;
+  }
+
+  /* "START" / "END" labels above dates */
+  .text-date-label {
+    @apply text-xs font-medium uppercase tracking-wide text-gray-500;
+  }
+  .text-date-label-end {
+    @apply text-xs font-medium uppercase tracking-wide text-red-500;
+  }
+
+  /* Date values "November 17, 2025" */
+  .text-date-value {
+    @apply text-sm text-gray-900;
+  }
+  .text-date-value-end {
+    @apply text-sm text-red-500;
+  }
+
+  /* "Quick Actions" - section title */
+  .text-section-title {
+    @apply font-semibold text-gray-900;
+    font-size: 24px;
+    line-height: 100%;
+    letter-spacing: -0.02em;
+  }
+
+  /* "Working Log" - section title */
+  .text-working-log-title {
+    @apply font-semibold text-gray-900;
+    font-size: 24px;
+    line-height: 100%;
+    letter-spacing: -0.02em;
+  }
+
+  /* "X contributions in the last week" - subtitle */
+  .text-working-log-subtitle {
+    @apply text-base text-gray-500;
+  }
+
+  /* Milestone labels */
+  .text-milestone-label {
+    @apply text-sm font-medium text-gray-900;
+  }
+
+  /* "Daily Updates" / "Social Proof Log" - tab titles */
+  .text-tab-title {
+    @apply text-xl font-medium text-gray-900;
+  }
+
+  /* "New Update" - card title (muted) */
+  .text-card-title {
+    @apply text-2xl text-gray-400;
+  }
+
+  /* Card description text */
+  .text-card-description {
+    @apply text-sm text-gray-400 text-center;
+  }
+
+  /* "Email attachments@vamo.com" - card title */
+  .text-card-email {
+    @apply font-semibold text-gray-400;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: -0.02em;
+  }
+
+
+  /* ---- BUTTONS ---- */
+
+  .btn-outline {
+    @apply px-6 py-2 border border-gray-900 rounded-full text-gray-900 font-medium hover:bg-gray-900 hover:text-white transition-colors;
+  }
+
+  .btn-primary {
+    @apply px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors;
+  }
+
+
+  /* ---- SIDEBAR ---- */
+
+  .text-nav {
+    @apply text-base font-medium text-gray-600;
+  }
+  .text-nav-active {
+    @apply text-base font-medium text-gray-900;
+  }
+  .text-user-name {
+    @apply text-gray-900 font-medium;
+  }
+
+
+  /* ---- GENERAL HEADINGS ---- */
+
+  .text-h1 {
+    @apply text-4xl font-bold text-gray-900;
+  }
+  .text-h2 {
+    @apply text-3xl font-bold text-gray-900;
+  }
+  .text-h3 {
+    @apply text-2xl font-semibold text-gray-900;
+  }
+  .text-h4 {
+    @apply text-xl font-semibold text-gray-900;
+  }
+
+  /* ---- BODY TEXT ---- */
+
+  .text-body {
+    @apply text-base text-gray-600;
+  }
+  .text-body-sm {
+    @apply text-sm text-gray-600;
+  }
+  .text-muted {
+    @apply text-gray-400;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

@@ -1,0 +1,75 @@
+---
+description: Project setup and environment
+globs:
+alwaysApply: true
+---
+
+# Project Setup
+
+## Prerequisites
+- Node.js 22+
+- pnpm 9+
+- Cloudflare account (for deployment)
+
+## Initial Setup
+
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/vamo-ai/vamo-fellowship-app.git
+   cd vamo-fellowship-app
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
+
+3. **Start dev server**
+   ```bash
+   pnpm dev
+   ```
+   Opens at http://localhost:8787
+
+## Package Manager
+
+**Always use pnpm** - not npm or yarn.
+
+```bash
+pnpm install           # Install deps
+pnpm add <package>     # Add dependency
+pnpm add -D <package>  # Add dev dependency
+pnpm remove <package>  # Remove package
+```
+
+## Environment
+
+No `.env` file needed - this is a Cloudflare Worker.
+
+Bindings are configured in `wrangler.toml`:
+- `ATTACHMENTS` - R2 bucket for storing files
+
+## Deployment
+
+Requires Cloudflare authentication:
+```bash
+npx wrangler login     # One-time auth
+pnpm deploy            # Deploy to production
+```
+
+## Troubleshooting
+
+### "Cannot find module" errors
+```bash
+pnpm install
+```
+
+### Type errors
+```bash
+pnpm check
+```
+
+### Wrangler issues
+```bash
+npx wrangler whoami    # Check auth
+npx wrangler r2 bucket list  # Check R2 access
+```

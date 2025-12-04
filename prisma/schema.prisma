@@ -1,0 +1,174 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  emailVerified       DateTime?
+  name                String?
+  password            String?
+  image               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // User type
+  userType            String    @default("admin") // admin, contributor
+
+  // Fellowship tracking
+  fellowshipStartDate DateTime  @default(now())
+  fellowshipStatus    String    @default("active") // active, submitted, approved, rejected
+  submittedAt         DateTime?
+
+  // Workspace tracking
+  hasJoinedWorkspace  Boolean   @default(false)
+  currentWorkspaceId  String?
+
+  // Relations
+  notes               Note[]
+  photos              Photo[]
+  accounts            Account[]
+  sessions            Session[]
+  customerProofs      CustomerProof[]
+  workspaceMemberships WorkspaceMember[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Photo {
+  id          String   @id @default(cuid())
+  url         String
+  filename    String
+  caption     String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source      String   @default("upload") // "upload" or "email"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model CustomerProof {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Customer details
+  customerName String
+  paymentDate  DateTime
+  amount       Float
+
+  // Proof document
+  documentUrl  String   // Path to uploaded screenshot/PDF
+  documentName String
+
+  // Verification
+  verified     Boolean  @default(false)
+  verifiedBy   String?
+  verifiedAt   DateTime?
+  notes        String?  // Admin notes
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  subscribers NoteSubscriber[]
+}
+
+model NoteSubscriber {
+  id        String   @id @default(cuid())
+  noteId    String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  email     String
+  createdAt DateTime @default(now())
+
+  @@unique([noteId, email])
+  @@index([noteId])
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  displayName String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  members     WorkspaceMember[]
+
+  @@index([name])
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        String   @default("member") // member, admin, owner
+  joinedAt    DateTime @default(now())
+
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([userId])
+  @@index([workspaceId])
+}
+
